@@ -1,13 +1,21 @@
-#include <stdint.h>
-#include <stddef.h>
+#ifndef TINYOS_UEFI_H
+#define TINYOS_UEFI_H
 
-/* --- Minimal UEFI Definitions --- */
+#include <stdint.h>
+
 typedef uint64_t UINTN;
 typedef uint64_t EFI_STATUS;
 typedef void    *EFI_HANDLE;
 typedef uint16_t CHAR16;
 
 #define EFI_SUCCESS 0
+
+typedef struct {
+    uint32_t Data1;
+    uint16_t Data2;
+    uint16_t Data3;
+    uint8_t  Data4[8];
+} EFI_GUID;
 
 typedef struct {
     uint64_t Signature;
@@ -34,6 +42,49 @@ typedef struct {
     uint64_t NumberOfPages;
     uint64_t Attribute;
 } EFI_MEMORY_DESCRIPTOR;
+
+/* --- Graphics Output Protocol (GOP) --- */
+typedef enum {
+    PixelRedGreenBlueReserved8BitPerColor = 0,
+    PixelBlueGreenRedReserved8BitPerColor = 1,
+    PixelBitMask = 2,
+    PixelBltOnly = 3,
+} EFI_GRAPHICS_PIXEL_FORMAT;
+
+typedef struct {
+    uint32_t RedMask;
+    uint32_t GreenMask;
+    uint32_t BlueMask;
+    uint32_t ReservedMask;
+} EFI_PIXEL_BITMASK;
+
+typedef struct {
+    uint32_t                  Version;
+    uint32_t                  HorizontalResolution;
+    uint32_t                  VerticalResolution;
+    EFI_GRAPHICS_PIXEL_FORMAT PixelFormat;
+    EFI_PIXEL_BITMASK         PixelInformation;
+    uint32_t                  PixelsPerScanLine;
+} EFI_GRAPHICS_OUTPUT_MODE_INFORMATION;
+
+typedef struct {
+    uint32_t                              MaxMode;
+    uint32_t                              Mode;
+    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *Info;
+    UINTN                                 SizeOfInfo;
+    uint64_t                              FrameBufferBase;
+    UINTN                                 FrameBufferSize;
+} EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE;
+
+typedef struct EFI_GRAPHICS_OUTPUT_PROTOCOL {
+    void *QueryMode;
+    void *SetMode;
+    void *Blt;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE *Mode;
+} EFI_GRAPHICS_OUTPUT_PROTOCOL;
+
+#define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID \
+    { 0x9042a9de, 0x23dc, 0x4a38, { 0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a } }
 
 typedef struct {
     EFI_TABLE_HEADER Hdr;
@@ -70,6 +121,17 @@ typedef struct {
     void *Exit;
     void *UnloadImage;
     EFI_STATUS (*ExitBootServices)(EFI_HANDLE ImageHandle, UINTN MapKey);
+    void *GetNextMonotonicCount;
+    void *Stall;
+    EFI_STATUS (*SetWatchdogTimer)(UINTN Timeout, uint64_t WatchdogCode, UINTN DataSize, CHAR16 *WatchdogData);
+    void *ConnectController;
+    void *DisconnectController;
+    void *OpenProtocol;
+    void *CloseProtocol;
+    void *OpenProtocolInformation;
+    void *ProtocolsPerHandle;
+    void *LocateHandleBuffer;
+    EFI_STATUS (*LocateProtocol)(EFI_GUID *Protocol, void *Registration, void **Interface);
 } EFI_BOOT_SERVICES;
 
 typedef struct {
@@ -86,69 +148,4 @@ typedef struct {
     EFI_BOOT_SERVICES *BootServices;
 } EFI_SYSTEM_TABLE;
 
-/* --- PL011 UART Driver (QEMU virt @ 0x09000000) --- */
-#define UART0_BASE 0x09000000UL
-#define UART_DR    (*(volatile uint32_t *)(UART0_BASE + 0x00))
-#define UART_FR    (*(volatile uint32_t *)(UART0_BASE + 0x18))
-#define UART_FR_TXFF (1U << 5) /* Transmit FIFO full */
-#define UART_FR_RXFE (1U << 4) /* Receive FIFO empty */
-
-static void uart_putc(char c) {
-    while (UART_FR & UART_FR_TXFF) {}
-    UART_DR = (uint32_t)c;
-}
-
-static void uart_puts(const char *s) {
-    while (*s) {
-        if (*s == '\n') uart_putc('\r');
-        uart_putc(*s++);
-    }
-}
-
-static char uart_getc(void) {
-    while (UART_FR & UART_FR_RXFE) {}
-    return (char)(UART_DR & 0xFF);
-}
-
-/* --- UEFI Entry Point --- */
-EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
-    SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
-    SystemTable->ConOut->OutputString(SystemTable->ConOut, u"Hello from TinyOS UEFI!\r\n");
-
-    /* 1. Fetch the memory map and exit UEFI Boot Services */
-    static uint8_t mmap_buf[16384];
-    UINTN mmap_size = sizeof(mmap_buf);
-    UINTN map_key = 0;
-    UINTN desc_size = 0;
-    uint32_t desc_ver = 0;
-
-    EFI_STATUS status = SystemTable->BootServices->GetMemoryMap(
-        &mmap_size,
-        (EFI_MEMORY_DESCRIPTOR *)mmap_buf,
-        &map_key,
-        &desc_size,
-        &desc_ver
-    );
-
-    if (status == EFI_SUCCESS) {
-        status = SystemTable->BootServices->ExitBootServices(ImageHandle, map_key);
-    }
-
-    if (status != EFI_SUCCESS) {
-        SystemTable->ConOut->OutputString(SystemTable->ConOut, u"ExitBootServices failed!\r\n");
-        while (1) {}
-    }
-
-    /* 2. UEFI Boot Services are now gone; our OS owns the hardware! */
-    uart_puts("\n[TinyOS Kernel] Took control from UEFI.\n");
-    uart_puts("PL011 UART active. Type something to echo:\n> ");
-
-    while (1) {
-        char c = uart_getc();
-        if (c == '\r') {
-            uart_puts("\n> ");
-        } else {
-            uart_putc(c);
-        }
-    }
-}
+#endif /* TINYOS_UEFI_H */
