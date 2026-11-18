@@ -1,0 +1,5 @@
+*.o
+*.efi
+*.EFI
+*.img
+esp/
