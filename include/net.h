@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+#ifdef htons
+#undef htons
+#endif
+#ifdef htonl
+#undef htonl
+#endif
+
 static inline uint16_t htons(uint16_t v) {
     return (uint16_t)((v >> 8) | (v << 8));
 }
