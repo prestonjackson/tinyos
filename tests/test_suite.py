@@ -85,20 +85,21 @@ def maybe_run_qemu_smoke():
         with open(disk, "wb") as f:
             f.write(b"\x00" * (1024 * 1024))
 
+        accel_args = ["-cpu", "host", "-accel", "hvf"] if sys.platform == "darwin" else ["-cpu", "cortex-a72"]
         cmd = [
-            qemu, "-M", "virt", "-cpu", "cortex-a72", "-m", "256M",
+            qemu, "-M", "virt", *accel_args, "-m", "256M",
             "-display", "none", "-serial", "stdio",
             "-bios", fw,
             "-drive", f"format=raw,file=fat:rw:{os.path.join(ROOT, 'esp')}",
             "-drive", f"if=none,id=hd0,format=raw,file={disk}",
             "-device", "virtio-blk-pci,drive=hd0",
             "-netdev", "user,id=n0",
-            "-device", "virtio-net-pci,netdev=n0",
+            "-device", "virtio-net-pci,netdev=n0,romfile=",
             "-object", f"filter-dump,id=f1,netdev=n0,file={pcap}",
         ]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         try:
-            out, _ = proc.communicate(timeout=6)
+            out, _ = proc.communicate(timeout=15)
         except subprocess.TimeoutExpired:
             proc.kill()
             out, _ = proc.communicate()

@@ -47,7 +47,7 @@ run: all disk.img
 		-drive if=none,id=hd0,format=raw,file=disk.img \
 		-device virtio-blk-pci,drive=hd0 \
 		-netdev user,id=net0 \
-		-device virtio-net-pci,netdev=net0
+		-device virtio-net-pci,netdev=net0,romfile=
 
 test:
 	python3 tests/test_suite.py
