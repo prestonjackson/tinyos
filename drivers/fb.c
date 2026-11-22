@@ -1,6 +1,12 @@
 #include "fb.h"
 
-/* Minimal 8x8 monochrome bitmap font for printable ASCII (0x20..0x7E) */
+/*
+ * Minimal 8x8 monochrome bitmap font for printable ASCII (0x20..0x7E).
+ * Each glyph is 8 bytes (one byte per row, bit 0 = leftmost pixel).
+ * Why embed an 8x8 font directly?
+ *   Once UEFI exits, there is no BIOS/OS font in memory; embedding ~760 bytes
+ *   lets us draw crisp text into any linear framebuffer with zero dependencies.
+ */
 static const uint8_t font8x8[95][8] = {
     {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, /* ' ' */
     {0x18,0x3C,0x3C,0x18,0x18,0x00,0x18,0x00}, /* '!' */
@@ -99,6 +105,7 @@ static const uint8_t font8x8[95][8] = {
     {0x6E,0x3B,0x00,0x00,0x00,0x00,0x00,0x00}, /* '~' */
 };
 
+/* Pack 0xRRGGBB into the framebuffer's native 32-bit pixel layout */
 static uint32_t pack_color(fb_format_t fmt, uint32_t rgb) {
     uint32_t r = (rgb >> 16) & 0xFF;
     uint32_t g = (rgb >> 8)  & 0xFF;
@@ -106,7 +113,7 @@ static uint32_t pack_color(fb_format_t fmt, uint32_t rgb) {
     if (fmt == FB_FMT_RGBX) {
         return (b << 16) | (g << 8) | r;
     }
-    /* FB_FMT_BGRX: little-endian [B, G, R, X] */
+    /* FB_FMT_BGRX: little-endian bytes [B, G, R, X] -> 0x00RRGGBB */
     return (r << 16) | (g << 8) | b;
 }
 
@@ -132,6 +139,7 @@ void fb_clear(fb_console_t *fb) {
     if (!fb || !fb->base) return;
     uint32_t bg = pack_color(fb->format, fb->bg_rgb);
     for (uint32_t y = 0; y < fb->height; y++) {
+        /* Always index rows by pitch_pixels (PixelsPerScanLine), not width */
         uint32_t *row = fb->base + (uint64_t)y * fb->pitch_pixels;
         for (uint32_t x = 0; x < fb->width; x++) {
             row[x] = bg;
@@ -141,6 +149,7 @@ void fb_clear(fb_console_t *fb) {
     fb->cursor_row = 0;
 }
 
+/* Scroll the entire screen up by one 8-pixel text row */
 static void fb_scroll(fb_console_t *fb) {
     uint32_t bg = pack_color(fb->format, fb->bg_rgb);
     for (uint32_t y = 8; y < fb->height; y++) {

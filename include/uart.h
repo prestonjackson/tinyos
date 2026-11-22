@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+/*
+ * ARM PL011 UART0 base address on QEMU `virt` machine.
+ * Why PL011 instead of x86 COM1 (0x3F8)?
+ *   ARM64 has no x86 I/O port instructions (`inb`/`outb`); peripherals are
+ *   memory-mapped. QEMU `virt` (and ARM64 cloud VMs) place a PL011 serial
+ *   controller at 0x09000000, which QEMU connects to `-serial stdio`.
+ */
 #define PL011_UART0_BASE 0x09000000ULL
 
 void uart_init(uint64_t base);

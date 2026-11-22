@@ -1,6 +1,13 @@
 #include "uart.h"
 #include "arch.h"
 
+/*
+ * ARM PL011 UART Register Offsets
+ *   UART_DR   (+0x00): Data Register (write to TX FIFO, read from RX FIFO)
+ *   UART_FR   (+0x18): Flag Register (TXFF bit 5 = TX full, RXFE bit 4 = RX empty)
+ *   UART_LCRH (+0x2C): Line Control (8N1 + FIFO enable)
+ *   UART_CR   (+0x30): Control Register (UARTEN bit 0, TXE bit 8, RXE bit 9)
+ */
 #define UART_DR   0x00
 #define UART_FR   0x18
 #define UART_LCRH 0x2C
@@ -11,21 +18,28 @@
 
 static uint64_t g_uart_base = PL011_UART0_BASE;
 
+/*
+ * Configures PL011 for 8N1 with hardware FIFOs enabled.
+ * Why skip baud-rate divisor setup?
+ *   QEMU's virtual PL011 ignores baud rate and UEFI already clocked it, so
+ *   re-enabling 8N1 + FIFOs is sufficient and avoids hardcoding a reference clock.
+ */
 void uart_init(uint64_t base) {
     g_uart_base = base;
-    /* Disable UART, set 8N1 + FIFO, re-enable TX & RX */
     mmio_write32(g_uart_base + UART_CR, 0);
     mmio_write32(g_uart_base + UART_LCRH, (3U << 5) | (1U << 4));
     mmio_write32(g_uart_base + UART_CR, (1U << 9) | (1U << 8) | (1U << 0));
 }
 
 void uart_putc(char c) {
+    /* Poll until the hardware transmit FIFO has room for another byte */
     while (mmio_read32(g_uart_base + UART_FR) & UART_FR_TXFF) {}
     mmio_write32(g_uart_base + UART_DR, (uint32_t)(uint8_t)c);
 }
 
 void uart_puts(const char *s) {
     while (*s) {
+        /* Serial terminals expect CRLF (\r\n) to return to column 0 on newline */
         if (*s == '\n') uart_putc('\r');
         uart_putc(*s++);
     }

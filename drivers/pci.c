@@ -1,6 +1,10 @@
 #include "pci.h"
 #include "arch.h"
 
+/*
+ * Computes the MMIO address of a PCIe configuration register in ECAM space:
+ *   bits [27:20] = bus, [19:15] = device, [14:12] = function, [11:0] = offset.
+ */
 static uint64_t ecam_addr(uint64_t ecam_base, uint8_t bus, uint8_t dev, uint8_t func, uint16_t off) {
     return ecam_base |
            ((uint64_t)bus  << 20) |
@@ -43,11 +47,19 @@ int pci_find_virtio(uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_
         out->vendor_id = vendor;
         out->device_id = device;
 
-        /* Enable Memory Space (bit 1) + Bus Master (bit 2) */
+        /*
+         * Enable Memory Space (bit 1) + Bus Master (bit 2) in PCI Command (0x04).
+         * Why: UEFI leaves Bus Master cleared for devices that have no UEFI driver,
+         * which silently blocks VirtIO DMA writes to our virtqueues.
+         */
         uint16_t cmd = pci_read16(ecam_base, 0, dev, 0, 0x04);
         pci_write16(ecam_base, 0, dev, 0, 0x04, (uint16_t)(cmd | 0x0006U));
 
-        /* Read 6 BARs, handling 64-bit MMIO BARs */
+        /*
+         * Read BAR0..BAR5 as assigned by EDK2.
+         * Why trust EDK2's BARs? UEFI already enumerated PCIe and assigned
+         * non-overlapping MMIO windows (often 64-bit BAR4 at 0x8000000000+).
+         */
         for (int i = 0; i < 6; i++) {
             out->bar[i] = 0;
         }
@@ -57,10 +69,10 @@ int pci_find_virtio(uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_
                 /* I/O BAR (unused on ARM64 MMIO) */
                 out->bar[i] = (uint64_t)(lo & ~0x3U);
             } else if ((lo & 0x6U) == 0x4U && i + 1 < 6) {
-                /* 64-bit MMIO BAR */
+                /* 64-bit MMIO BAR: combine BAR[i] (low 32) and BAR[i+1] (high 32) */
                 uint32_t hi = pci_read32(ecam_base, 0, dev, 0, (uint16_t)(0x10 + (i + 1) * 4));
                 out->bar[i] = ((uint64_t)hi << 32) | (uint64_t)(lo & ~0xFULL);
-                i++; /* Skip upper half slot */
+                i++; /* Skip the upper-half BAR slot */
             } else {
                 /* 32-bit MMIO BAR */
                 out->bar[i] = (uint64_t)(lo & ~0xFULL);

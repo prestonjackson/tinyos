@@ -4,23 +4,32 @@
 #include <stdint.h>
 #include "pci.h"
 
-/* VirtIO Device Status bits */
+/*
+ * VirtIO 1.0 PCI Transport & Split Virtqueue Definitions
+ * ------------------------------------------------------
+ * Why VirtIO 1.0 (modern PCI capabilities) instead of legacy VirtIO 0.9.5?
+ *   Legacy VirtIO relies on x86 I/O port BAR0, which is awkward or disabled on
+ *   ARM64. VirtIO 1.0 uses standard MMIO PCI capabilities (`cap_id == 0x09`)
+ *   and works identically across QEMU, KVM, and cloud hypervisors (AWS/GCP).
+ */
+
+/* Device Status bits (written in strict order: ACK -> DRIVER -> FEATURES_OK -> DRIVER_OK) */
 #define VIRTIO_STATUS_ACK         1
 #define VIRTIO_STATUS_DRIVER      2
 #define VIRTIO_STATUS_DRIVER_OK   4
 #define VIRTIO_STATUS_FEATURES_OK 8
 #define VIRTIO_STATUS_FAILED      128
 
-/* VirtIO Feature bits */
+/* Bit 32: Mandatory for VirtIO 1.0 modern devices */
 #define VIRTIO_F_VERSION_1 (1ULL << 32)
 
-/* VirtIO PCI Capability cfg_type values */
+/* VirtIO PCI Capability cfg_type values (found in PCI capability ID 0x09) */
 #define VIRTIO_PCI_CAP_COMMON_CFG 1
 #define VIRTIO_PCI_CAP_NOTIFY_CFG 2
 #define VIRTIO_PCI_CAP_ISR_CFG    3
 #define VIRTIO_PCI_CAP_DEVICE_CFG 4
 
-/* VirtIO Common Config register offsets */
+/* VirtIO Common Config MMIO register offsets */
 #define VIRTIO_COMMON_DFSELECT   0x00
 #define VIRTIO_COMMON_DF         0x04
 #define VIRTIO_COMMON_GFSELECT   0x08
@@ -39,11 +48,12 @@
 #define VIRTIO_COMMON_Q_USEDHI   0x34
 
 /* Virtqueue descriptor flags */
-#define VRING_DESC_F_NEXT  1
-#define VRING_DESC_F_WRITE 2
+#define VRING_DESC_F_NEXT  1 /* Descriptor chains to `next` */
+#define VRING_DESC_F_WRITE 2 /* Device writes into this buffer (else device reads) */
 
 #define VIRTQ_MAX_SIZE 64
 
+/* Single entry in the descriptor table: points to one DMA buffer in RAM */
 typedef struct {
     uint64_t addr;
     uint32_t len;
@@ -51,6 +61,10 @@ typedef struct {
     uint16_t next;
 } __attribute__((packed)) vring_desc_t;
 
+/*
+ * Available ring: Driver writes descriptor head indices here and bumps `idx`.
+ * `volatile` prevents the compiler from caching/reordering DMA ring accesses.
+ */
 typedef struct {
     volatile uint16_t flags;
     volatile uint16_t idx;
@@ -62,13 +76,19 @@ typedef struct {
     uint32_t len;
 } __attribute__((packed)) vring_used_elem_t;
 
+/* Used ring: Device writes completed descriptor IDs here and bumps `idx`. */
 typedef struct {
     volatile uint16_t flags;
     volatile uint16_t idx;
     volatile vring_used_elem_t ring[VIRTQ_MAX_SIZE];
 } __attribute__((packed)) vring_used_t;
 
-/* Single 4096-byte aligned memory block holding one split virtqueue */
+/*
+ * Single 4096-byte aligned memory block holding one split virtqueue.
+ * Why 4096-byte alignment for each section?
+ *   VirtIO 1.0 requires 16/2/4-byte alignment, while legacy VirtIO requires
+ *   4096-byte page alignment; aligning each section to 4096 satisfies both.
+ */
 typedef struct {
     vring_desc_t  desc[VIRTQ_MAX_SIZE];
     uint8_t       _pad1[4096 - sizeof(vring_desc_t) * VIRTQ_MAX_SIZE];
@@ -91,7 +111,7 @@ typedef struct {
     pci_device_t pci;
     uint64_t     common_cfg;
     uint64_t     notify_base;
-    uint32_t     notify_off_mul;
+    uint32_t     notify_off_mul; /* Doorbell stride in bytes */
     uint64_t     isr_cfg;
     uint64_t     device_cfg;
 } virtio_pci_dev_t;

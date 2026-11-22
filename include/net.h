@@ -3,6 +3,14 @@
 
 #include <stdint.h>
 
+/*
+ * Minimal Network Byte-Order & Packet Construction Helpers
+ * --------------------------------------------------------
+ * Why #undef htons / htonl?
+ *   macOS system headers (<sys/_endian.h>) define htons/htonl as macros when
+ *   compiling host unit tests. Undefining them avoids macro-expansion syntax
+ *   errors while keeping the same behavior for both freestanding and host builds.
+ */
 #ifdef htons
 #undef htons
 #endif
@@ -23,7 +31,7 @@ static inline uint32_t htonl(uint32_t v) {
 
 uint16_t net_checksum(const void *data, uint32_t len);
 
-/* Build a complete Ethernet + IPv4 + UDP frame into out_buf. Returns frame length. */
+/* Builds a complete Ethernet + IPv4 + UDP frame into out_buf. Returns frame length. */
 uint32_t net_build_udp_frame(
     uint8_t *out_buf,
     const uint8_t src_mac[6],
@@ -36,7 +44,7 @@ uint32_t net_build_udp_frame(
     uint16_t payload_len
 );
 
-/* Build a 42-byte Ethernet + ARP request frame into out_buf. Returns 42. */
+/* Builds a 42-byte Ethernet + ARP request frame into out_buf. Returns 42. */
 uint32_t net_build_arp_request(
     uint8_t *out_buf,
     const uint8_t src_mac[6],

@@ -5,9 +5,21 @@
 #include <stddef.h>
 
 /*
- * Memory-mapped I/O (MMIO) and barrier primitives.
- * Under TEST_HOST, these route to mock functions in tests/test_drivers.c
- * so all drivers can be unit-tested on any host CPU (x86_64 or arm64).
+ * Hardware Abstraction: Memory-Mapped I/O (MMIO) and Memory Barriers
+ * -------------------------------------------------------------------
+ * Why explicit mmio_read/write helpers instead of C packed structs?
+ *   1. On ARM64, hardware registers live in "Device" memory, not normal RAM.
+ *      If you access a packed struct, Clang may emit unaligned loads/stores or
+ *      merge two 32-bit writes into a single 64-bit `stp`, which can fault on
+ *      PCIe/MMIO bridges.
+ *   2. Explicit `volatile` width-exact accesses guarantee the CPU emits the
+ *      exact 8-, 16-, or 32-bit bus transaction the hardware expects.
+ *
+ * Why #ifdef TEST_HOST?
+ *   When compiling unit tests on a developer's Mac or Linux CI machine, there
+ *   is no real PL011 UART or PCIe ECAM at 0x4010000000. Defining TEST_HOST
+ *   redirects MMIO calls to mock functions in tests/test_drivers.c and
+ *   replaces ARM64's `dmb sy` instruction with a compiler memory fence.
  */
 #ifdef TEST_HOST
 
@@ -56,6 +68,13 @@ static inline void mmio_write32(uint64_t addr, uint32_t val) {
     *(volatile uint32_t *)(uintptr_t)addr = val;
 }
 
+/*
+ * Full system Data Memory Barrier (`dmb sy`).
+ * Why: ARM64 is weakly ordered—the CPU can reorder writes to DMA ring buffers
+ * in RAM relative to the MMIO doorbell write that tells QEMU/hardware to read
+ * them. `dmb sy` forces all prior RAM writes to become visible to devices
+ * before the doorbell write executes.
+ */
 static inline void dma_barrier(void) {
 #if defined(__aarch64__)
     __asm__ volatile("dmb sy" ::: "memory");

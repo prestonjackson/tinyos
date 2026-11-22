@@ -2,9 +2,18 @@
 #include <stddef.h>
 
 #ifndef TEST_HOST
-/* Required by lld-link for aarch64-unknown-windows freestanding builds */
+/*
+ * `_fltused` is a sentinel symbol expected by Microsoft's PE/COFF ABI (and
+ * therefore `lld-link` when targeting `aarch64-unknown-windows`) whenever
+ * compiler-generated code might reference floating-point or varargs helpers.
+ */
 int _fltused = 0;
 
+/*
+ * Freestanding memory routines.
+ * Compiled with `-fno-builtin` in the Makefile so Clang does not optimize
+ * these loops into infinite self-recursive calls to memcpy/memset.
+ */
 void *memcpy(void *dst, const void *src, size_t n) {
     uint8_t *d = (uint8_t *)dst;
     const uint8_t *s = (const uint8_t *)src;

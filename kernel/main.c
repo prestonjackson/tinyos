@@ -7,6 +7,7 @@
 #include "virtio_net.h"
 #include "net.h"
 
+/* Global kernel state for our console, disk, and network devices */
 static fb_console_t g_fb;
 static int          g_has_fb = 0;
 static virtio_blk_t g_blk;
@@ -14,6 +15,7 @@ static int          g_has_blk = 0;
 static virtio_net_t g_net;
 static int          g_has_net = 0;
 
+/* Mirror kernel output to both the PL011 serial TTY and the GOP framebuffer */
 static void kputc(char c) {
     uart_putc(c);
     if (g_has_fb) fb_putc(&g_fb, c);
@@ -55,6 +57,7 @@ static int str_eq(const char *a, const char *b) {
     return *a == *b;
 }
 
+/* Sends a broadcast UDP packet to QEMU's user-net gateway (10.0.2.2:9000) */
 static void send_demo_udp(void) {
     if (!g_has_net) {
         kputs("[net] No virtio-net device initialized.\n");
@@ -76,6 +79,7 @@ static void send_demo_udp(void) {
     }
 }
 
+/* Sends an ARP "who-has 10.0.2.2" request */
 static void send_demo_arp(void) {
     if (!g_has_net) {
         kputs("[net] No virtio-net device initialized.\n");
@@ -108,6 +112,19 @@ static void read_sector0(void) {
     }
 }
 
+/*
+ * UEFI Application Entry Point (`efi_main`)
+ * -----------------------------------------
+ * Boot sequence:
+ *   1. Disable UEFI's 5-minute watchdog so the VM doesn't reboot while idle.
+ *   2. Query GOP framebuffer geometry BEFORE ExitBootServices (since Boot
+ *      Services disappear afterward).
+ *   3. Call GetMemoryMap() -> ExitBootServices() in a retry loop with ZERO
+ *      allocations or ConOut prints in between (any allocation changes MapKey
+ *      and causes ExitBootServices to fail).
+ *   4. Take over PL011 UART, GOP framebuffer, virtio-blk, and virtio-net.
+ *   5. Run a minimal interactive TTY shell.
+ */
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
     SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
@@ -132,7 +149,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
                    ? FB_FMT_RGBX : FB_FMT_BGRX;
     }
 
-    /* 2. Exit UEFI Boot Services (no allocations or ConOut calls inside loop) */
+    /* 2. Exit UEFI Boot Services (static 32 KB buffer avoids heap allocation) */
     static uint8_t mmap_buf[32768];
     EFI_STATUS status = 1;
     for (int attempt = 0; attempt < 4; attempt++) {

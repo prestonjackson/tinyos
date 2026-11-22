@@ -3,10 +3,24 @@
 
 #include <stdint.h>
 
+/*
+ * Minimal UEFI Specification Definitions
+ * --------------------------------------
+ * Why define these ~130 lines ourselves instead of using EDK2 or gnu-efi?
+ *   EDK2 is millions of lines of build machinery, and gnu-efi adds ELF-to-PE
+ *   wrapper hacks. Because UEFI is just a binary ABI of C function-pointer
+ *   tables, defining only the structs we actually call keeps the OS tiny,
+ *   self-contained, and buildable with nothing but `clang` + `lld-link`.
+ *
+ * Why is UINTN `uint64_t` instead of `unsigned long`?
+ *   `aarch64-unknown-windows` uses the LLP64 data model where `long` is 32-bit
+ *   even on 64-bit CPUs. Using `uint64_t` prevents silent 32-bit truncation of
+ *   UEFI status codes, pointers, and physical addresses.
+ */
 typedef uint64_t UINTN;
 typedef uint64_t EFI_STATUS;
 typedef void    *EFI_HANDLE;
-typedef uint16_t CHAR16;
+typedef uint16_t CHAR16; /* UEFI strings are UTF-16LE (`u"..."` in C11) */
 
 #define EFI_SUCCESS 0
 
@@ -25,6 +39,7 @@ typedef struct {
     uint32_t Reserved;
 } EFI_TABLE_HEADER;
 
+/* Console text output (used only before ExitBootServices) */
 typedef struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
     void *Reset;
     EFI_STATUS (*OutputString)(struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This, CHAR16 *String);
@@ -43,7 +58,13 @@ typedef struct {
     uint64_t Attribute;
 } EFI_MEMORY_DESCRIPTOR;
 
-/* --- Graphics Output Protocol (GOP) --- */
+/*
+ * Graphics Output Protocol (GOP)
+ * Why GOP instead of legacy VGA (0xB8000)?
+ *   ARM64 machines and modern cloud VMs have no legacy 0xB8000 VGA text hardware.
+ *   Instead, UEFI's GOP provides a linear pixel framebuffer in RAM that remains
+ *   directly writable after ExitBootServices() (when paired with `-device ramfb`).
+ */
 typedef enum {
     PixelRedGreenBlueReserved8BitPerColor = 0,
     PixelBlueGreenRedReserved8BitPerColor = 1,
@@ -64,7 +85,7 @@ typedef struct {
     uint32_t                  VerticalResolution;
     EFI_GRAPHICS_PIXEL_FORMAT PixelFormat;
     EFI_PIXEL_BITMASK         PixelInformation;
-    uint32_t                  PixelsPerScanLine;
+    uint32_t                  PixelsPerScanLine; /* Stride (may exceed width!) */
 } EFI_GRAPHICS_OUTPUT_MODE_INFORMATION;
 
 typedef struct {
@@ -86,6 +107,10 @@ typedef struct EFI_GRAPHICS_OUTPUT_PROTOCOL {
 #define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID \
     { 0x9042a9de, 0x23dc, 0x4a38, { 0x96, 0xfb, 0x7a, 0xde, 0xd0, 0x80, 0x51, 0x6a } }
 
+/*
+ * EFI_BOOT_SERVICES table: field order must match the UEFI Spec exactly because
+ * C accesses fields by byte offset. Unused entries are typed as `void *`.
+ */
 typedef struct {
     EFI_TABLE_HEADER Hdr;
     void *RaiseTPL;

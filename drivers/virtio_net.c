@@ -2,6 +2,7 @@
 #include "arch.h"
 #include "kstring.h"
 
+/* Static RX (Queue 0) and TX (Queue 1) ring memory + 8 pre-allocated RX buffers */
 static virtq_mem_t g_rx_qmem;
 static virtq_mem_t g_tx_qmem;
 
@@ -20,7 +21,7 @@ int virtio_net_init(uint64_t ecam_base, virtio_net_t *net) {
         return -1;
     }
 
-    /* Queue 0 = RX, Queue 1 = TX */
+    /* VirtIO-net spec: Queue 0 = RX (receive), Queue 1 = TX (transmit) */
     if (virtio_pci_setup_queue(&net->vdev, 0, &net->rx_q, &g_rx_qmem) != 0) {
         return -1;
     }
@@ -28,14 +29,14 @@ int virtio_net_init(uint64_t ecam_base, virtio_net_t *net) {
         return -1;
     }
 
-    /* Read MAC address from device_cfg (bytes 0..5) */
+    /* Read the NIC's 6-byte MAC address from device_cfg[0..5] */
     for (int i = 0; i < 6; i++) {
         net->mac[i] = (net->vdev.device_cfg != 0)
             ? mmio_read8(net->vdev.device_cfg + (uint64_t)i)
             : (uint8_t)(0x52 + i);
     }
 
-    /* Post 8 RX buffers onto Queue 0 */
+    /* Pre-post 8 receive buffers so the NIC can immediately store incoming frames */
     uint16_t n_rx = (net->rx_q.size < 8) ? net->rx_q.size : 8;
     for (uint16_t i = 0; i < n_rx; i++) {
         net->rx_q.mem->desc[i].addr  = (uint64_t)(uintptr_t)g_rx_bufs[i];
@@ -52,6 +53,11 @@ int virtio_net_init(uint64_t ecam_base, virtio_net_t *net) {
     return 0;
 }
 
+/*
+ * Transmits one raw Ethernet frame on Queue 1 (TX) using a 2-descriptor chain:
+ *   desc[0]: 12-byte zeroed virtio_net_hdr_t (no checksum/GSO offload requested)
+ *   desc[1]: Ethernet frame payload (`len` bytes)
+ */
 int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
     if (!net || !frame || len == 0 || len > 1514) return -1;
 
@@ -66,13 +72,11 @@ int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
     uint16_t d1 = (uint16_t)((d0 + 1) % vq->size);
     vq->next_desc = (uint16_t)((d0 + 2) % vq->size);
 
-    /* Descriptor 0: 12-byte virtio_net_hdr */
     vq->mem->desc[d0].addr  = (uint64_t)(uintptr_t)&hdr;
     vq->mem->desc[d0].len   = sizeof(hdr);
     vq->mem->desc[d0].flags = VRING_DESC_F_NEXT;
     vq->mem->desc[d0].next  = d1;
 
-    /* Descriptor 1: Ethernet frame */
     vq->mem->desc[d1].addr  = (uint64_t)(uintptr_t)tx_buf;
     vq->mem->desc[d1].len   = len;
     vq->mem->desc[d1].flags = 0;
@@ -95,6 +99,7 @@ int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
     return -1;
 }
 
+/* Non-blocking RX poll: strips the 12-byte virtio_net_hdr and re-posts the buffer */
 int virtio_net_recv(virtio_net_t *net, void *buf, uint32_t max_len) {
     virtq_t *vq = &net->rx_q;
     dma_barrier();
@@ -107,8 +112,8 @@ int virtio_net_recv(virtio_net_t *net, void *buf, uint32_t max_len) {
     uint32_t total_len = vq->mem->used.ring[used_slot].len;
     vq->last_used_idx++;
 
-    uint32_t hdr_sz  = (uint32_t)sizeof(virtio_net_hdr_t);
-    int      copied  = 0;
+    uint32_t hdr_sz = (uint32_t)sizeof(virtio_net_hdr_t);
+    int      copied = 0;
     if (total_len > hdr_sz) {
         uint32_t frame_len = total_len - hdr_sz;
         if (frame_len > max_len) frame_len = max_len;
@@ -116,7 +121,6 @@ int virtio_net_recv(virtio_net_t *net, void *buf, uint32_t max_len) {
         copied = (int)frame_len;
     }
 
-    /* Re-post descriptor to RX available ring */
     uint16_t avail_slot = vq->mem->avail.idx % vq->size;
     vq->mem->avail.ring[avail_slot] = desc_id;
     dma_barrier();
