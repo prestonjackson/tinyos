@@ -73,6 +73,9 @@ run: all disk.img
 		-netdev user,id=net0 \
 		-device virtio-net-pci,netdev=net0,romfile=
 
+format:
+	clang-format -i include/*.h lib/*.c drivers/*.c net/*.c kernel/*.c tests/*.c
+
 test:
 	python3 tests/test_suite.py
 

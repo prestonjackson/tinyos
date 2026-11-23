@@ -112,7 +112,8 @@ def maybe_run_qemu_smoke():
         print("[PASS] QEMU smoke test & pcap packet capture verified")
 
 
-def verify_c_line_lengths():
+def verify_formatting():
+    c_files = []
     bad = []
     for sub in ("include", "lib", "drivers", "net", "kernel", "tests"):
         d = os.path.join(ROOT, sub)
@@ -120,6 +121,7 @@ def verify_c_line_lengths():
             if not name.endswith((".c", ".h")):
                 continue
             path = os.path.join(d, name)
+            c_files.append(path)
             with open(path, "r", encoding="utf-8") as f:
                 for lineno, line in enumerate(f, 1):
                     width = len(line.rstrip("\n"))
@@ -128,9 +130,16 @@ def verify_c_line_lengths():
     assert not bad, "Lines exceed 80 chars:\n  " + "\n  ".join(bad)
     print("[PASS] All C/H files conform to <=80 column width")
 
+    cf = shutil.which("clang-format")
+    if cf:
+        run([cf, "--dry-run", "--Werror", *c_files])
+        print("[PASS] clang-format style check passed")
+    else:
+        print("[SKIP] clang-format check (clang-format not installed)")
+
 
 def main():
-    verify_c_line_lengths()
+    verify_formatting()
     run(["make", "clean"])
     run(["make"])
     verify_pe32_efi(EFI_PATH)
