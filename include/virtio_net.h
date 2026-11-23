@@ -33,9 +33,9 @@ typedef struct {
   uint8_t          mac[6];
 } virtio_net_t;
 
-[[nodiscard]] int virtio_net_init(uint64_t ecam_base, virtio_net_t *net);
+[[nodiscard]] int virtio_net_init(uint64_t ecam_base, virtio_net_t* net);
 [[nodiscard]] int virtio_net_send(
-    virtio_net_t *net, const void *frame, uint32_t len);
-int virtio_net_recv(virtio_net_t *net, void *buf, uint32_t max_len);
+    virtio_net_t* net, const void* frame, uint32_t len);
+int virtio_net_recv(virtio_net_t* net, void* buf, uint32_t max_len);
 
 #endif /* TINYOS_VIRTIO_NET_H */

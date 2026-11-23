@@ -5,8 +5,8 @@
  * RFC 1071 Internet Checksum (used by IPv4, ICMP, and TCP/UDP).
  * Sums 16-bit big-endian words with end-around carry, then one's complement.
  */
-uint16_t net_checksum(const void *data, uint32_t len) {
-  const uint8_t *p = (const uint8_t *)data;
+uint16_t net_checksum(const void* data, uint32_t len) {
+  const uint8_t* p = (const uint8_t *)data;
   uint32_t sum = 0;
 
   for (uint32_t i = 0; i + 1 < len; i += 2) {
@@ -28,14 +28,14 @@ uint16_t net_checksum(const void *data, uint32_t len) {
  *   Wireshark-valid packet immediately after virtio-net initializes.
  */
 uint32_t net_build_udp_frame(
-    uint8_t *out_buf,
+    uint8_t* out_buf,
     const uint8_t src_mac[6],
     const uint8_t dst_mac[6],
     uint32_t src_ip_be,
     uint32_t dst_ip_be,
     uint16_t src_port,
     uint16_t dst_port,
-    const void *payload,
+    const void* payload,
     uint16_t payload_len) {
   /* 1. Ethernet header (14 bytes) */
   memcpy(out_buf + 0, dst_mac, 6);
@@ -44,7 +44,7 @@ uint32_t net_build_udp_frame(
   out_buf[13] = 0x00;
 
   /* 2. IPv4 header (20 bytes, IHL=5) */
-  uint8_t *ip = out_buf + 14;
+  uint8_t* ip = out_buf + 14;
   uint16_t udp_len = (uint16_t)(8 + payload_len);
   uint16_t ip_len  = (uint16_t)(20 + udp_len);
 
@@ -62,7 +62,7 @@ uint32_t net_build_udp_frame(
   ip[11] = (uint8_t)(csum & 0xFF);
 
   /* 3. UDP header (8 bytes) + payload */
-  uint8_t *udp = ip + 20;
+  uint8_t* udp = ip + 20;
   udp[0] = (uint8_t)(src_port >> 8);
   udp[1] = (uint8_t)(src_port & 0xFF);
   udp[2] = (uint8_t)(dst_port >> 8);
@@ -81,7 +81,7 @@ uint32_t net_build_udp_frame(
 
 /* Constructs a 42-byte Ethernet broadcast ARP "who-has" request */
 uint32_t net_build_arp_request(
-    uint8_t *out_buf,
+    uint8_t* out_buf,
     const uint8_t src_mac[6],
     uint32_t src_ip_be,
     uint32_t target_ip_be) {
@@ -90,7 +90,7 @@ uint32_t net_build_arp_request(
   out_buf[12] = 0x08; /* EtherType: ARP (0x0806) */
   out_buf[13] = 0x06;
 
-  uint8_t *arp = out_buf + 14;
+  uint8_t* arp = out_buf + 14;
   arp[0] = 0x00; arp[1] = 0x01; /* HTYPE: Ethernet (1) */
   arp[2] = 0x08; arp[3] = 0x00; /* PTYPE: IPv4 (0x0800) */
   arp[4] = 6;                   /* HLEN: 6-byte MAC */

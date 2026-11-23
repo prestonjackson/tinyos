@@ -12,7 +12,7 @@
  *   - device_cfg : device-specific config (e.g., disk capacity or MAC)
  */
 int virtio_pci_probe(
-    uint64_t ecam_base, pci_device_t *pci, virtio_pci_dev_t *vdev) {
+    uint64_t ecam_base, pci_device_t* pci, virtio_pci_dev_t* vdev) {
   vdev->pci            = *pci;
   vdev->common_cfg     = 0;
   vdev->notify_base    = 0;
@@ -78,7 +78,7 @@ int virtio_pci_probe(
  *      (never blindly echo features like EVENT_IDX that we don't handle).
  *   4. Set FEATURES_OK and re-read status to confirm the device accepted them.
  */
-int virtio_pci_init_features(virtio_pci_dev_t *vdev, uint64_t driver_features) {
+int virtio_pci_init_features(virtio_pci_dev_t* vdev, uint64_t driver_features) {
   uint64_t cfg = vdev->common_cfg;
 
   mmio_write8(cfg + VIRTIO_COMMON_STATUS, 0);
@@ -119,7 +119,7 @@ int virtio_pci_init_features(virtio_pci_dev_t *vdev, uint64_t driver_features) {
   return 0;
 }
 
-void virtio_pci_set_driver_ok(virtio_pci_dev_t *vdev) {
+void virtio_pci_set_driver_ok(virtio_pci_dev_t* vdev) {
   uint64_t cfg = vdev->common_cfg;
   uint8_t st = mmio_read8(cfg + VIRTIO_COMMON_STATUS);
   mmio_write8(
@@ -133,7 +133,7 @@ void virtio_pci_set_driver_ok(virtio_pci_dev_t *vdev) {
  *   splitting lo/hi 32-bit writes is universally safe per the VirtIO spec.
  */
 int virtio_pci_setup_queue(
-    virtio_pci_dev_t *vdev, uint16_t q_idx, virtq_t *vq, virtq_mem_t *mem) {
+    virtio_pci_dev_t* vdev, uint16_t q_idx, virtq_t* vq, virtq_mem_t* mem) {
   uint64_t cfg = vdev->common_cfg;
 
   mmio_write16(cfg + VIRTIO_COMMON_Q_SELECT, q_idx);
@@ -173,7 +173,7 @@ int virtio_pci_setup_queue(
 }
 
 /* Rings the device doorbell for `vq` after flushing prior ring writes */
-void virtio_pci_notify(virtio_pci_dev_t *vdev, virtq_t *vq) {
+void virtio_pci_notify(virtio_pci_dev_t* vdev, virtq_t* vq) {
   dma_barrier();
   uint64_t doorbell = vdev->notify_base +
       (uint64_t)vq->notify_off * (uint64_t)vdev->notify_off_mul;

@@ -54,6 +54,6 @@ void     pci_write32(
  * Returns 0 on success, -1 if not found.
  */
 [[nodiscard]] int pci_find_virtio(
-    uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_device_t *out);
+    uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_device_t* out);
 
 #endif /* TINYOS_PCI_H */

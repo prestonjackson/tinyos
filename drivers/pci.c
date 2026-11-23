@@ -42,7 +42,7 @@ void pci_write32(
 }
 
 int pci_find_virtio(
-    uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_device_t *out) {
+    uint64_t ecam_base, uint16_t trans_id, uint16_t mod_id, pci_device_t* out) {
   for (uint8_t dev = 0; dev < 32; dev++) {
     uint16_t vendor = pci_read16(ecam_base, 0, dev, 0, 0x00);
     if (vendor == 0xFFFF || vendor != PCI_VENDOR_VIRTIO) continue;

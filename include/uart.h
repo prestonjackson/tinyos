@@ -15,7 +15,7 @@
 
 void uart_init(uint64_t base);
 void uart_putc(char c);
-void uart_puts(const char *s);
+void uart_puts(const char* s);
 void uart_put_hex(uint64_t val);
 void uart_put_dec(uint64_t val);
 bool uart_rx_ready(void);

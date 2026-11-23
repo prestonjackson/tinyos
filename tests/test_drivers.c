@@ -41,7 +41,7 @@ static void reset_mocks(void) {
   g_q_select        = 0;
 }
 
-static uint8_t *map_mock_addr(uint64_t addr) {
+static uint8_t* map_mock_addr(uint64_t addr) {
   if (addr >= MOCK_ECAM_BASE && addr < MOCK_ECAM_BASE + sizeof(g_ecam)) {
     return &g_ecam[addr - MOCK_ECAM_BASE];
   }
@@ -52,12 +52,12 @@ static uint8_t *map_mock_addr(uint64_t addr) {
 }
 
 uint8_t mock_mmio_read8(uint64_t addr) {
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   return p ? *p : 0xFF;
 }
 
 uint16_t mock_mmio_read16(uint64_t addr) {
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   if (!p) return 0xFFFF;
   uint16_t v;
   memcpy(&v, p, 2);
@@ -71,7 +71,7 @@ uint32_t mock_mmio_read32(uint64_t addr) {
     /* bit 32 = VIRTIO_F_VERSION_1 */
     return (g_df_select == 0) ? (uint32_t)VIRTIO_NET_F_MAC : 1U;
   }
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   if (!p) return 0xFFFFFFFFU;
   uint32_t v;
   memcpy(&v, p, 4);
@@ -79,7 +79,7 @@ uint32_t mock_mmio_read32(uint64_t addr) {
 }
 
 void mock_mmio_write8(uint64_t addr, uint8_t val) {
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   if (p) *p = val;
 }
 
@@ -95,7 +95,7 @@ void mock_mmio_write16(uint64_t addr, uint16_t val) {
     memcpy(&g_bar4[VIRTIO_COMMON_Q_SIZE], &qsz, 2);
     memcpy(&g_bar4[VIRTIO_COMMON_Q_NOFF], &g_q_select, 2);
   }
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   if (p) memcpy(p, &val, 2);
 }
 
@@ -123,7 +123,7 @@ void mock_mmio_write32(uint64_t addr, uint32_t val) {
     }
     return;
   }
-  uint8_t *p = map_mock_addr(addr);
+  uint8_t* p = map_mock_addr(addr);
   if (p) memcpy(p, &val, 4);
 }
 
@@ -257,7 +257,7 @@ static void test_net_packets(void) {
   assert(arp[20] == 0x00 && arp[21] == 0x01); /* Request */
 
   uint8_t udp[128];
-  const char *msg = "PING";
+  const char* msg = "PING";
   uint32_t udp_len = net_build_udp_frame(
       udp, src_mac, dst_mac, src_ip, dst_ip, 1234, 9000, msg, 4);
   assert(udp_len == 14 + 20 + 8 + 4);

@@ -30,9 +30,9 @@ typedef struct {
   uint64_t         capacity_sectors; /* Total 512-byte sectors */
 } virtio_blk_t;
 
-[[nodiscard]] int virtio_blk_init(uint64_t ecam_base, virtio_blk_t *blk);
+[[nodiscard]] int virtio_blk_init(uint64_t ecam_base, virtio_blk_t* blk);
 [[nodiscard]] int virtio_blk_rw(
-    virtio_blk_t *blk, uint64_t sector, void *buf, uint32_t count,
+    virtio_blk_t* blk, uint64_t sector, void* buf, uint32_t count,
     bool is_write);
 
 #endif /* TINYOS_VIRTIO_BLK_H */

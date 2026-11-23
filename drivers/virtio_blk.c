@@ -4,7 +4,7 @@
 /* Static 4 KB-aligned ring memory (avoids needing a dynamic page allocator) */
 static virtq_mem_t g_blk_qmem;
 
-int virtio_blk_init(uint64_t ecam_base, virtio_blk_t *blk) {
+int virtio_blk_init(uint64_t ecam_base, virtio_blk_t* blk) {
   pci_device_t pci = {};
   if (pci_find_virtio(ecam_base, PCI_DEV_VIRTIO_BLK_TRANS,
                       PCI_DEV_VIRTIO_BLK_MOD, &pci) != 0) {
@@ -43,7 +43,7 @@ int virtio_blk_init(uint64_t ecam_base, virtio_blk_t *blk) {
  *   setup during early OS bring-up.
  */
 int virtio_blk_rw(
-    virtio_blk_t *blk, uint64_t sector, void *buf, uint32_t count,
+    virtio_blk_t* blk, uint64_t sector, void* buf, uint32_t count,
     bool is_write) {
   if (!blk || !buf || count == 0) return -1;
 
@@ -55,7 +55,7 @@ int virtio_blk_rw(
   req.sector   = sector;
   status       = 0xFF;
 
-  virtq_t *vq = &blk->vq;
+  virtq_t* vq = &blk->vq;
   uint16_t d0 = vq->next_desc % vq->size;
   uint16_t d1 = (uint16_t)((d0 + 1) % vq->size);
   uint16_t d2 = (uint16_t)((d0 + 2) % vq->size);

@@ -118,7 +118,7 @@ static uint32_t pack_color(fb_format_t fmt, uint32_t rgb) {
 }
 
 int fb_init(
-    fb_console_t *fb, uint64_t base, uint32_t width, uint32_t height,
+    fb_console_t* fb, uint64_t base, uint32_t width, uint32_t height,
     uint32_t pitch_pixels, fb_format_t format) {
   if (!fb || base == 0 || width < 8 || height < 8 || pitch_pixels < width) {
     return -1;
@@ -136,12 +136,12 @@ int fb_init(
   return 0;
 }
 
-void fb_clear(fb_console_t *fb) {
+void fb_clear(fb_console_t* fb) {
   if (!fb || !fb->base) return;
   uint32_t bg = pack_color(fb->format, fb->bg_rgb);
   for (uint32_t y = 0; y < fb->height; y++) {
     /* Always index rows by pitch_pixels (PixelsPerScanLine), not width */
-    uint32_t *row = fb->base + (uint64_t)y * fb->pitch_pixels;
+    uint32_t* row = fb->base + (uint64_t)y * fb->pitch_pixels;
     for (uint32_t x = 0; x < fb->width; x++) {
       row[x] = bg;
     }
@@ -151,24 +151,24 @@ void fb_clear(fb_console_t *fb) {
 }
 
 /* Scroll the entire screen up by one 8-pixel text row */
-static void fb_scroll(fb_console_t *fb) {
+static void fb_scroll(fb_console_t* fb) {
   uint32_t bg = pack_color(fb->format, fb->bg_rgb);
   for (uint32_t y = 8; y < fb->height; y++) {
-    uint32_t *dst = fb->base + (uint64_t)(y - 8) * fb->pitch_pixels;
-    uint32_t *src = fb->base + (uint64_t)y * fb->pitch_pixels;
+    uint32_t* dst = fb->base + (uint64_t)(y - 8) * fb->pitch_pixels;
+    uint32_t* src = fb->base + (uint64_t)y * fb->pitch_pixels;
     for (uint32_t x = 0; x < fb->width; x++) {
       dst[x] = src[x];
     }
   }
   for (uint32_t y = fb->height - 8; y < fb->height; y++) {
-    uint32_t *row = fb->base + (uint64_t)y * fb->pitch_pixels;
+    uint32_t* row = fb->base + (uint64_t)y * fb->pitch_pixels;
     for (uint32_t x = 0; x < fb->width; x++) {
       row[x] = bg;
     }
   }
 }
 
-void fb_putc(fb_console_t *fb, char c) {
+void fb_putc(fb_console_t* fb, char c) {
   if (!fb || !fb->base) return;
   uint32_t cols = fb->width / 8;
   uint32_t rows = fb->height / 8;
@@ -192,7 +192,7 @@ void fb_putc(fb_console_t *fb, char c) {
 
     for (uint32_t gy = 0; gy < 8; gy++) {
       uint8_t bits = font8x8[idx][gy];
-      uint32_t *row = fb->base + (uint64_t)(py + gy) * fb->pitch_pixels + px;
+      uint32_t* row = fb->base + (uint64_t)(py + gy) * fb->pitch_pixels + px;
       for (uint32_t gx = 0; gx < 8; gx++) {
         row[gx] = (bits & (1U << gx)) ? fg : bg;
       }
@@ -210,7 +210,7 @@ void fb_putc(fb_console_t *fb, char c) {
   }
 }
 
-void fb_puts(fb_console_t *fb, const char *s) {
+void fb_puts(fb_console_t* fb, const char* s) {
   while (*s) {
     fb_putc(fb, *s++);
   }

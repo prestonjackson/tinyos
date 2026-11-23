@@ -19,7 +19,7 @@
  */
 typedef uint64_t UINTN;
 typedef uint64_t EFI_STATUS;
-typedef void    *EFI_HANDLE;
+typedef void* EFI_HANDLE;
 typedef uint16_t CHAR16; /* UEFI strings are UTF-16LE (`u"..."` in C11/C23) */
 
 #define EFI_SUCCESS 0
@@ -41,14 +41,14 @@ typedef struct {
 
 /* Console text output (used only before ExitBootServices) */
 typedef struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
-  void *Reset;
+  void* Reset;
   EFI_STATUS (*OutputString)(
-      struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This, CHAR16 *String);
-  void *TestString;
-  void *QueryMode;
-  void *SetMode;
-  void *SetAttribute;
-  EFI_STATUS (*ClearScreen)(struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This);
+      struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* This, CHAR16* String);
+  void* TestString;
+  void* QueryMode;
+  void* SetMode;
+  void* SetAttribute;
+  EFI_STATUS (*ClearScreen)(struct EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* This);
 } EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL;
 
 typedef struct {
@@ -92,17 +92,17 @@ typedef struct {
 typedef struct {
   uint32_t                              MaxMode;
   uint32_t                              Mode;
-  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *Info;
+  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* Info;
   UINTN                                 SizeOfInfo;
   uint64_t                              FrameBufferBase;
   UINTN                                 FrameBufferSize;
 } EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE;
 
 typedef struct EFI_GRAPHICS_OUTPUT_PROTOCOL {
-  void *QueryMode;
-  void *SetMode;
-  void *Blt;
-  EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE *Mode;
+  void* QueryMode;
+  void* SetMode;
+  void* Blt;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE* Mode;
 } EFI_GRAPHICS_OUTPUT_PROTOCOL;
 
 #define EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID \
@@ -115,66 +115,66 @@ typedef struct EFI_GRAPHICS_OUTPUT_PROTOCOL {
  */
 typedef struct {
   EFI_TABLE_HEADER Hdr;
-  void *RaiseTPL;
-  void *RestoreTPL;
-  void *AllocatePages;
-  void *FreePages;
+  void* RaiseTPL;
+  void* RestoreTPL;
+  void* AllocatePages;
+  void* FreePages;
   EFI_STATUS (*GetMemoryMap)(
       UINTN *MemoryMapSize,
-      EFI_MEMORY_DESCRIPTOR *MemoryMap,
+      EFI_MEMORY_DESCRIPTOR* MemoryMap,
       UINTN *MapKey,
       UINTN *DescriptorSize,
-      uint32_t *DescriptorVersion);
-  void *AllocatePool;
-  void *FreePool;
-  void *CreateEvent;
-  void *SetTimer;
-  void *WaitForEvent;
-  void *SignalEvent;
-  void *CloseEvent;
-  void *CheckEvent;
-  void *InstallProtocolInterface;
-  void *ReinstallProtocolInterface;
-  void *UninstallProtocolInterface;
-  void *HandleProtocol;
-  void *Reserved;
-  void *RegisterProtocolNotify;
-  void *LocateHandle;
-  void *LocateDevicePath;
-  void *InstallConfigurationTable;
-  void *LoadImage;
-  void *StartImage;
-  void *Exit;
-  void *UnloadImage;
+      uint32_t* DescriptorVersion);
+  void* AllocatePool;
+  void* FreePool;
+  void* CreateEvent;
+  void* SetTimer;
+  void* WaitForEvent;
+  void* SignalEvent;
+  void* CloseEvent;
+  void* CheckEvent;
+  void* InstallProtocolInterface;
+  void* ReinstallProtocolInterface;
+  void* UninstallProtocolInterface;
+  void* HandleProtocol;
+  void* Reserved;
+  void* RegisterProtocolNotify;
+  void* LocateHandle;
+  void* LocateDevicePath;
+  void* InstallConfigurationTable;
+  void* LoadImage;
+  void* StartImage;
+  void* Exit;
+  void* UnloadImage;
   EFI_STATUS (*ExitBootServices)(EFI_HANDLE ImageHandle, UINTN MapKey);
-  void *GetNextMonotonicCount;
-  void *Stall;
+  void* GetNextMonotonicCount;
+  void* Stall;
   EFI_STATUS (*SetWatchdogTimer)(
       UINTN Timeout, uint64_t WatchdogCode,
-      UINTN DataSize, CHAR16 *WatchdogData);
-  void *ConnectController;
-  void *DisconnectController;
-  void *OpenProtocol;
-  void *CloseProtocol;
-  void *OpenProtocolInformation;
-  void *ProtocolsPerHandle;
-  void *LocateHandleBuffer;
+      UINTN DataSize, CHAR16* WatchdogData);
+  void* ConnectController;
+  void* DisconnectController;
+  void* OpenProtocol;
+  void* CloseProtocol;
+  void* OpenProtocolInformation;
+  void* ProtocolsPerHandle;
+  void* LocateHandleBuffer;
   EFI_STATUS (*LocateProtocol)(
-      EFI_GUID *Protocol, void *Registration, void **Interface);
+      EFI_GUID* Protocol, void* Registration, void** Interface);
 } EFI_BOOT_SERVICES;
 
 typedef struct {
   EFI_TABLE_HEADER Hdr;
-  CHAR16 *FirmwareVendor;
+  CHAR16* FirmwareVendor;
   uint32_t FirmwareRevision;
   EFI_HANDLE ConsoleInHandle;
-  void *ConIn;
+  void* ConIn;
   EFI_HANDLE ConsoleOutHandle;
-  EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConOut;
+  EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* ConOut;
   EFI_HANDLE StandardErrorHandle;
-  void *StdErr;
-  void *RuntimeServices;
-  EFI_BOOT_SERVICES *BootServices;
+  void* StdErr;
+  void* RuntimeServices;
+  EFI_BOOT_SERVICES* BootServices;
 } EFI_SYSTEM_TABLE;
 
 #endif /* TINYOS_UEFI_H */

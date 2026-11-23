@@ -101,7 +101,7 @@ typedef struct {
 } __attribute__((aligned(4096))) virtq_mem_t;
 
 typedef struct {
-  virtq_mem_t *mem;
+  virtq_mem_t* mem;
   uint16_t     size;
   uint16_t     queue_idx;
   uint16_t     notify_off;
@@ -119,12 +119,12 @@ typedef struct {
 } virtio_pci_dev_t;
 
 [[nodiscard]] int  virtio_pci_probe(
-    uint64_t ecam_base, pci_device_t *pci, virtio_pci_dev_t *vdev);
+    uint64_t ecam_base, pci_device_t* pci, virtio_pci_dev_t* vdev);
 [[nodiscard]] int  virtio_pci_init_features(
-    virtio_pci_dev_t *vdev, uint64_t driver_features);
-void virtio_pci_set_driver_ok(virtio_pci_dev_t *vdev);
+    virtio_pci_dev_t* vdev, uint64_t driver_features);
+void virtio_pci_set_driver_ok(virtio_pci_dev_t* vdev);
 [[nodiscard]] int  virtio_pci_setup_queue(
-    virtio_pci_dev_t *vdev, uint16_t q_idx, virtq_t *vq, virtq_mem_t *mem);
-void virtio_pci_notify(virtio_pci_dev_t *vdev, virtq_t *vq);
+    virtio_pci_dev_t* vdev, uint16_t q_idx, virtq_t* vq, virtq_mem_t* mem);
+void virtio_pci_notify(virtio_pci_dev_t* vdev, virtq_t* vq);
 
 #endif /* TINYOS_VIRTIO_H */

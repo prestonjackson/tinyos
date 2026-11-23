@@ -29,23 +29,23 @@ static inline uint32_t htonl(uint32_t v) {
          ((v & 0xFF000000U) >> 24);
 }
 
-uint16_t net_checksum(const void *data, uint32_t len);
+uint16_t net_checksum(const void* data, uint32_t len);
 
 /* Builds a complete Ethernet + IPv4 + UDP frame; returns frame length. */
 uint32_t net_build_udp_frame(
-    uint8_t *out_buf,
+    uint8_t* out_buf,
     const uint8_t src_mac[6],
     const uint8_t dst_mac[6],
     uint32_t src_ip_be,
     uint32_t dst_ip_be,
     uint16_t src_port,
     uint16_t dst_port,
-    const void *payload,
+    const void* payload,
     uint16_t payload_len);
 
 /* Builds a 42-byte Ethernet + ARP request frame; returns 42. */
 uint32_t net_build_arp_request(
-    uint8_t *out_buf,
+    uint8_t* out_buf,
     const uint8_t src_mac[6],
     uint32_t src_ip_be,
     uint32_t target_ip_be);

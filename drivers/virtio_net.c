@@ -9,7 +9,7 @@ static virtq_mem_t g_tx_qmem;
 #define RX_BUF_SIZE 2048
 static uint8_t g_rx_bufs[8][RX_BUF_SIZE];
 
-int virtio_net_init(uint64_t ecam_base, virtio_net_t *net) {
+int virtio_net_init(uint64_t ecam_base, virtio_net_t* net) {
   pci_device_t pci = {};
   if (pci_find_virtio(ecam_base, PCI_DEV_VIRTIO_NET_TRANS,
                       PCI_DEV_VIRTIO_NET_MOD, &pci) != 0) {
@@ -60,7 +60,7 @@ int virtio_net_init(uint64_t ecam_base, virtio_net_t *net) {
  *   desc[0]: 12-byte zeroed virtio_net_hdr_t (no checksum/GSO offload)
  *   desc[1]: Ethernet frame payload (`len` bytes)
  */
-int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
+int virtio_net_send(virtio_net_t* net, const void* frame, uint32_t len) {
   if (!net || !frame || len == 0 || len > 1514) return -1;
 
   static virtio_net_hdr_t hdr = {};
@@ -69,7 +69,7 @@ int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
   hdr = (virtio_net_hdr_t){};
   memcpy(tx_buf, frame, len);
 
-  virtq_t *vq = &net->tx_q;
+  virtq_t* vq = &net->tx_q;
   uint16_t d0 = vq->next_desc % vq->size;
   uint16_t d1 = (uint16_t)((d0 + 1) % vq->size);
   vq->next_desc = (uint16_t)((d0 + 2) % vq->size);
@@ -102,8 +102,8 @@ int virtio_net_send(virtio_net_t *net, const void *frame, uint32_t len) {
 }
 
 /* Non-blocking RX poll: strips 12-byte virtio_net_hdr and re-posts buffer */
-int virtio_net_recv(virtio_net_t *net, void *buf, uint32_t max_len) {
-  virtq_t *vq = &net->rx_q;
+int virtio_net_recv(virtio_net_t* net, void* buf, uint32_t max_len) {
+  virtq_t* vq = &net->rx_q;
   dma_barrier();
   if (vq->mem->used.idx == vq->last_used_idx) {
     return 0; /* No packet waiting */

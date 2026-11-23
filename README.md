@@ -8,19 +8,20 @@ A minimal 64-bit ARM (`aarch64`) UEFI operating system for learning how to boots
 - **Graphics Console (`drivers/fb.c`)**: UEFI GOP linear framebuffer + 8×8 bitmap font console (`-device ramfb`).
 - **Disk Driver (`drivers/virtio_blk.c`)**: VirtIO 1.0 PCIe block driver.
 - **Network Driver (`drivers/virtio_net.c`, `net/net.c`)**: VirtIO 1.0 PCIe NIC driver + Ethernet/ARP/IPv4/UDP packet builder.
-- **Test Suite (`tests/test_suite.py`, `tests/test_drivers.c`)**: PE32+ header checks, host C unit tests with mocked MMIO, and QEMU smoke test.
+- **Test Suite (`tests/test_suite.py`, `tests/test_drivers.c`)**: PE32+ header checks, host C unit tests with mocked MMIO, formatting checks, and QEMU smoke test.
 
 ## Prerequisites (macOS Apple Silicon)
 
 ```bash
-brew install lld qemu
+brew install lld qemu clang-format
 ```
 
-## Build, Test & Run
+## Build, Format, Test & Run
 
 ```bash
-make test   # Cross-compile, validate PE32+ headers, run C unit tests (+ QEMU smoke test)
+make format # Auto-format all .c and .h files using .clang-format
+make test   # Check formatting, cross-compile, validate PE32+, and run tests
 make run    # Boot in QEMU with Apple Hypervisor.framework (-accel hvf), TTY, ramfb, disk, and net
 ```
 
-Press `Ctrl-A` then `X` in the terminal to exit QEMU. See [TUTORIAL.md](TUTORIAL.md) for a walkthrough of every file.
+Press `Ctrl-A` then `X` in the terminal to exit QEMU. See [TUTORIAL.md](TUTORIAL.md) for a walkthrough of every file and [STYLE.md](STYLE.md) for code conventions.

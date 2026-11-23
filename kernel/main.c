@@ -23,7 +23,7 @@ static void kputc(char c) {
   if (g_has_fb) fb_putc(&g_fb, c);
 }
 
-static void kputs(const char *s) {
+static void kputs(const char* s) {
   uart_puts(s);
   if (g_has_fb) fb_puts(&g_fb, s);
 }
@@ -52,7 +52,7 @@ static void kput_dec(uint64_t val) {
   }
 }
 
-static bool str_eq(const char *a, const char *b) {
+static bool str_eq(const char* a, const char* b) {
   while (*a && *b) {
     if (*a++ != *b++) return false;
   }
@@ -69,7 +69,7 @@ static void send_demo_udp(void) {
   const uint8_t bcast[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   uint32_t src_ip = htonl((10U << 24) | (0U << 16) | (2U << 8) | 15U);
   uint32_t dst_ip = htonl((10U << 24) | (0U << 16) | (2U << 8) | 2U);
-  const char *msg = "Hello from TinyOS!\n";
+  const char* msg = "Hello from TinyOS!\n";
 
   uint32_t len = net_build_udp_frame(
       frame, g_net.mac, bcast, src_ip, dst_ip, 12345, 9000, msg, 19);
@@ -128,7 +128,7 @@ static void read_sector0(void) {
  *   4. Take over PL011 UART, GOP framebuffer, virtio-blk, and virtio-net.
  *   5. Run a minimal interactive TTY shell.
  */
-EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
+EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable) {
   SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
   SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
   SystemTable->ConOut->OutputString(
@@ -136,7 +136,7 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
   /* 1. Capture GOP framebuffer info before ExitBootServices */
   EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
-  EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = NULL;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL* gop = NULL;
   uint64_t fb_base = 0;
   uint32_t fb_w = 0, fb_h = 0, fb_pitch = 0;
   fb_format_t fb_fmt = FB_FMT_BGRX;

@@ -37,7 +37,7 @@ void uart_putc(char c) {
   mmio_write32(g_uart_base + UART_DR, (uint32_t)(uint8_t)c);
 }
 
-void uart_puts(const char *s) {
+void uart_puts(const char* s) {
   while (*s) {
     /* Serial terminals expect CRLF (\r\n) to return to column 0 on newline */
     if (*s == '\n') uart_putc('\r');
