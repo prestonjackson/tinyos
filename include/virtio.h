@@ -13,7 +13,7 @@
  *   and works identically across QEMU, KVM, and cloud hypervisors (AWS/GCP).
  */
 
-/* Device Status bits (written in strict order: ACK -> DRIVER -> FEATURES_OK -> DRIVER_OK) */
+/* Device Status bits (ACK -> DRIVER -> FEATURES_OK -> DRIVER_OK) */
 #define VIRTIO_STATUS_ACK         1
 #define VIRTIO_STATUS_DRIVER      2
 #define VIRTIO_STATUS_DRIVER_OK   4
@@ -49,38 +49,40 @@
 
 /* Virtqueue descriptor flags */
 #define VRING_DESC_F_NEXT  1 /* Descriptor chains to `next` */
-#define VRING_DESC_F_WRITE 2 /* Device writes into this buffer (else device reads) */
+#define VRING_DESC_F_WRITE 2 /* Device writes into buffer (else reads) */
 
 #define VIRTQ_MAX_SIZE 64
 
 /* Single entry in the descriptor table: points to one DMA buffer in RAM */
 typedef struct {
-    uint64_t addr;
-    uint32_t len;
-    uint16_t flags;
-    uint16_t next;
+  uint64_t addr;
+  uint32_t len;
+  uint16_t flags;
+  uint16_t next;
 } __attribute__((packed)) vring_desc_t;
+
+_Static_assert(sizeof(vring_desc_t) == 16, "vring_desc_t must be 16 bytes");
 
 /*
  * Available ring: Driver writes descriptor head indices here and bumps `idx`.
  * `volatile` prevents the compiler from caching/reordering DMA ring accesses.
  */
 typedef struct {
-    volatile uint16_t flags;
-    volatile uint16_t idx;
-    volatile uint16_t ring[VIRTQ_MAX_SIZE];
+  volatile uint16_t flags;
+  volatile uint16_t idx;
+  volatile uint16_t ring[VIRTQ_MAX_SIZE];
 } __attribute__((packed)) vring_avail_t;
 
 typedef struct {
-    uint32_t id;
-    uint32_t len;
+  uint32_t id;
+  uint32_t len;
 } __attribute__((packed)) vring_used_elem_t;
 
 /* Used ring: Device writes completed descriptor IDs here and bumps `idx`. */
 typedef struct {
-    volatile uint16_t flags;
-    volatile uint16_t idx;
-    volatile vring_used_elem_t ring[VIRTQ_MAX_SIZE];
+  volatile uint16_t flags;
+  volatile uint16_t idx;
+  volatile vring_used_elem_t ring[VIRTQ_MAX_SIZE];
 } __attribute__((packed)) vring_used_t;
 
 /*
@@ -90,36 +92,39 @@ typedef struct {
  *   4096-byte page alignment; aligning each section to 4096 satisfies both.
  */
 typedef struct {
-    vring_desc_t  desc[VIRTQ_MAX_SIZE];
-    uint8_t       _pad1[4096 - sizeof(vring_desc_t) * VIRTQ_MAX_SIZE];
-    vring_avail_t avail;
-    uint8_t       _pad2[4096 - sizeof(vring_avail_t)];
-    vring_used_t  used;
-    uint8_t       _pad3[4096 - sizeof(vring_used_t)];
+  vring_desc_t  desc[VIRTQ_MAX_SIZE];
+  uint8_t       _pad1[4096 - sizeof(vring_desc_t) * VIRTQ_MAX_SIZE];
+  vring_avail_t avail;
+  uint8_t       _pad2[4096 - sizeof(vring_avail_t)];
+  vring_used_t  used;
+  uint8_t       _pad3[4096 - sizeof(vring_used_t)];
 } __attribute__((aligned(4096))) virtq_mem_t;
 
 typedef struct {
-    virtq_mem_t *mem;
-    uint16_t     size;
-    uint16_t     queue_idx;
-    uint16_t     notify_off;
-    uint16_t     last_used_idx;
-    uint16_t     next_desc;
+  virtq_mem_t *mem;
+  uint16_t     size;
+  uint16_t     queue_idx;
+  uint16_t     notify_off;
+  uint16_t     last_used_idx;
+  uint16_t     next_desc;
 } virtq_t;
 
 typedef struct {
-    pci_device_t pci;
-    uint64_t     common_cfg;
-    uint64_t     notify_base;
-    uint32_t     notify_off_mul; /* Doorbell stride in bytes */
-    uint64_t     isr_cfg;
-    uint64_t     device_cfg;
+  pci_device_t pci;
+  uint64_t     common_cfg;
+  uint64_t     notify_base;
+  uint32_t     notify_off_mul; /* Doorbell stride in bytes */
+  uint64_t     isr_cfg;
+  uint64_t     device_cfg;
 } virtio_pci_dev_t;
 
-int  virtio_pci_probe(uint64_t ecam_base, pci_device_t *pci, virtio_pci_dev_t *vdev);
-int  virtio_pci_init_features(virtio_pci_dev_t *vdev, uint64_t driver_features);
+[[nodiscard]] int  virtio_pci_probe(
+    uint64_t ecam_base, pci_device_t *pci, virtio_pci_dev_t *vdev);
+[[nodiscard]] int  virtio_pci_init_features(
+    virtio_pci_dev_t *vdev, uint64_t driver_features);
 void virtio_pci_set_driver_ok(virtio_pci_dev_t *vdev);
-int  virtio_pci_setup_queue(virtio_pci_dev_t *vdev, uint16_t q_idx, virtq_t *vq, virtq_mem_t *mem);
+[[nodiscard]] int  virtio_pci_setup_queue(
+    virtio_pci_dev_t *vdev, uint16_t q_idx, virtq_t *vq, virtq_mem_t *mem);
 void virtio_pci_notify(virtio_pci_dev_t *vdev, virtq_t *vq);
 
 #endif /* TINYOS_VIRTIO_H */

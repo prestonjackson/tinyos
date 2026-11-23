@@ -1,6 +1,7 @@
 #ifndef TINYOS_UART_H
 #define TINYOS_UART_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 /*
@@ -17,7 +18,7 @@ void uart_putc(char c);
 void uart_puts(const char *s);
 void uart_put_hex(uint64_t val);
 void uart_put_dec(uint64_t val);
-int  uart_rx_ready(void);
+bool uart_rx_ready(void);
 char uart_getc(void);
 
 #endif /* TINYOS_UART_H */

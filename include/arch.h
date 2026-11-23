@@ -1,17 +1,17 @@
 #ifndef TINYOS_ARCH_H
 #define TINYOS_ARCH_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /*
  * Hardware Abstraction: Memory-Mapped I/O (MMIO) and Memory Barriers
  * -------------------------------------------------------------------
  * Why explicit mmio_read/write helpers instead of C packed structs?
  *   1. On ARM64, hardware registers live in "Device" memory, not normal RAM.
- *      If you access a packed struct, Clang may emit unaligned loads/stores or
- *      merge two 32-bit writes into a single 64-bit `stp`, which can fault on
- *      PCIe/MMIO bridges.
+ *      If you access a packed struct, Clang may emit unaligned loads/stores
+ *      or merge two 32-bit writes into a single 64-bit `stp`, which can fault
+ *      on PCIe/MMIO bridges.
  *   2. Explicit `volatile` width-exact accesses guarantee the CPU emits the
  *      exact 8-, 16-, or 32-bit bus transaction the hardware expects.
  *
@@ -30,42 +30,58 @@ void     mock_mmio_write8(uint64_t addr, uint8_t val);
 void     mock_mmio_write16(uint64_t addr, uint16_t val);
 void     mock_mmio_write32(uint64_t addr, uint32_t val);
 
-static inline uint8_t  mmio_read8(uint64_t addr)  { return mock_mmio_read8(addr); }
-static inline uint16_t mmio_read16(uint64_t addr) { return mock_mmio_read16(addr); }
-static inline uint32_t mmio_read32(uint64_t addr) { return mock_mmio_read32(addr); }
+static inline uint8_t mmio_read8(uint64_t addr) {
+  return mock_mmio_read8(addr);
+}
 
-static inline void mmio_write8(uint64_t addr, uint8_t val)   { mock_mmio_write8(addr, val); }
-static inline void mmio_write16(uint64_t addr, uint16_t val) { mock_mmio_write16(addr, val); }
-static inline void mmio_write32(uint64_t addr, uint32_t val) { mock_mmio_write32(addr, val); }
+static inline uint16_t mmio_read16(uint64_t addr) {
+  return mock_mmio_read16(addr);
+}
+
+static inline uint32_t mmio_read32(uint64_t addr) {
+  return mock_mmio_read32(addr);
+}
+
+static inline void mmio_write8(uint64_t addr, uint8_t val) {
+  mock_mmio_write8(addr, val);
+}
+
+static inline void mmio_write16(uint64_t addr, uint16_t val) {
+  mock_mmio_write16(addr, val);
+}
+
+static inline void mmio_write32(uint64_t addr, uint32_t val) {
+  mock_mmio_write32(addr, val);
+}
 
 static inline void dma_barrier(void) {
-    __asm__ volatile("" ::: "memory");
+  __asm__ volatile("" ::: "memory");
 }
 
 #else
 
 static inline uint8_t mmio_read8(uint64_t addr) {
-    return *(volatile uint8_t *)(uintptr_t)addr;
+  return *(volatile uint8_t *)(uintptr_t)addr;
 }
 
 static inline uint16_t mmio_read16(uint64_t addr) {
-    return *(volatile uint16_t *)(uintptr_t)addr;
+  return *(volatile uint16_t *)(uintptr_t)addr;
 }
 
 static inline uint32_t mmio_read32(uint64_t addr) {
-    return *(volatile uint32_t *)(uintptr_t)addr;
+  return *(volatile uint32_t *)(uintptr_t)addr;
 }
 
 static inline void mmio_write8(uint64_t addr, uint8_t val) {
-    *(volatile uint8_t *)(uintptr_t)addr = val;
+  *(volatile uint8_t *)(uintptr_t)addr = val;
 }
 
 static inline void mmio_write16(uint64_t addr, uint16_t val) {
-    *(volatile uint16_t *)(uintptr_t)addr = val;
+  *(volatile uint16_t *)(uintptr_t)addr = val;
 }
 
 static inline void mmio_write32(uint64_t addr, uint32_t val) {
-    *(volatile uint32_t *)(uintptr_t)addr = val;
+  *(volatile uint32_t *)(uintptr_t)addr = val;
 }
 
 /*
@@ -77,9 +93,9 @@ static inline void mmio_write32(uint64_t addr, uint32_t val) {
  */
 static inline void dma_barrier(void) {
 #if defined(__aarch64__)
-    __asm__ volatile("dmb sy" ::: "memory");
+  __asm__ volatile("dmb sy" ::: "memory");
 #else
-    __asm__ volatile("" ::: "memory");
+  __asm__ volatile("" ::: "memory");
 #endif
 }
 

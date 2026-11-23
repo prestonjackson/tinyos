@@ -16,7 +16,7 @@ EFI_FW  := /opt/homebrew/share/qemu/edk2-aarch64-code.fd
 #   -fno-stack-protector             : No OS stack-canary runtime (__stack_chk_fail)
 #   -mgeneral-regs-only              : Avoid NEON/FP registers before OS enables them
 #   -mno-stack-arg-probe             : Avoid Windows __chkstk probes on stack frames
-CFLAGS  := --target=aarch64-unknown-windows -ffreestanding -fno-builtin \
+CFLAGS  := -std=c2x --target=aarch64-unknown-windows -ffreestanding -fno-builtin \
            -fno-stack-protector -mgeneral-regs-only -mno-stack-arg-probe \
            -Iinclude -O2 -Wall -Wextra -Werror
 LDFLAGS := -subsystem:efi_application -entry:efi_main

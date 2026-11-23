@@ -56,7 +56,8 @@ def run_c_unit_tests():
     with tempfile.TemporaryDirectory() as tmp:
         bin_path = os.path.join(tmp, "test_drivers")
         cmd = [
-            "clang", "-DTEST_HOST", "-Iinclude", "-O2", "-Wall", "-Wextra", "-Werror",
+            "clang", "-std=c2x", "-DTEST_HOST", "-Iinclude",
+            "-O2", "-Wall", "-Wextra", "-Werror",
             "tests/test_drivers.c",
             "drivers/uart.c", "drivers/fb.c", "drivers/pci.c",
             "drivers/virtio_pci.c", "drivers/virtio_blk.c", "drivers/virtio_net.c",
@@ -111,7 +112,25 @@ def maybe_run_qemu_smoke():
         print("[PASS] QEMU smoke test & pcap packet capture verified")
 
 
+def verify_c_line_lengths():
+    bad = []
+    for sub in ("include", "lib", "drivers", "net", "kernel", "tests"):
+        d = os.path.join(ROOT, sub)
+        for name in sorted(os.listdir(d)):
+            if not name.endswith((".c", ".h")):
+                continue
+            path = os.path.join(d, name)
+            with open(path, "r", encoding="utf-8") as f:
+                for lineno, line in enumerate(f, 1):
+                    width = len(line.rstrip("\n"))
+                    if width > 80:
+                        bad.append(f"{sub}/{name}:{lineno} ({width} chars)")
+    assert not bad, "Lines exceed 80 chars:\n  " + "\n  ".join(bad)
+    print("[PASS] All C/H files conform to <=80 column width")
+
+
 def main():
+    verify_c_line_lengths()
     run(["make", "clean"])
     run(["make"])
     verify_pe32_efi(EFI_PATH)
